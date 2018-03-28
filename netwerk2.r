@@ -42,24 +42,34 @@ lrate <- tf$placeholder(tf$float32, shape(), 'lrate')
 
 
 
+
 #Define variables
-w_conv1 <-  tf$Variable( tf$truncated_normal(shape(3L, 3L, 3L, 8L),stddev=0.1), 'w_conv1')
-b_conv1 <- tf$Variable( tf$truncated_normal( shape(8L),stddev=0.1), 'b_conv1')
+w_conv1 <-  tf$Variable( tf$truncated_normal(shape(3L, 3L, 3L, 40L),stddev=0.1), 'w_conv1')
+b_conv1 <- tf$Variable( tf$truncated_normal( shape(40L),stddev=0.1), 'b_conv1')
 
-w_conv2 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 8L, 16L), stddev=0.1), 'w_conv2')
-b_conv2 <- tf$Variable( tf$truncated_normal(shape = shape(16L), stddev=0.1), 'b_conv2')
+w_conv2 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 40L, 64L), stddev=0.1), 'w_conv2')
+b_conv2 <- tf$Variable( tf$truncated_normal(shape = shape(64L), stddev=0.1), 'b_conv2')
 
-w_conv3 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 16L, 32L), stddev=0.1), 'w_conv3')
-b_conv3 <- tf$Variable( tf$truncated_normal(shape = shape(32L), stddev=0.1), 'b_conv3')
+w_conv3 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 64L, 64L), stddev=0.1), 'w_conv3')
+b_conv3 <- tf$Variable( tf$truncated_normal(shape = shape(64L), stddev=0.1), 'b_conv3')
 
-w_conv4 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 32L, 64L), stddev=0.1), 'w_conv4')
+w_conv4 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 64L, 64L), stddev=0.1), 'w_conv4')
 b_conv4 <- tf$Variable( tf$truncated_normal(shape = shape(64L), stddev=0.1), 'b_conv4')
 
-w_fc1 <- tf$Variable( tf$truncated_normal(shape((w*h)/(4^(aantal_pool)) * aantal_kanalen, 100L), stddev=0.1), 'w_fc1')
-b_fc1 <- tf$Variable( tf$truncated_normal( shape(100L) , stddev=0.1), 'b_fc1')
+w_conv5 <- tf$Variable( tf$truncated_normal(shape = shape(3L, 3L, 64L, 128L), stddev=0.1), 'w_conv4')
+b_conv5 <- tf$Variable( tf$truncated_normal(shape = shape(128L), stddev=0.1), 'b_conv4')
 
-w_fcout <- tf$Variable( tf$truncated_normal( shape(100L, clas)  , stddev=0.1), 'w_fcout')
-b_fcout <- tf$Variable( tf$truncated_normal( shape(clas) , stddev=0.1), 'b_fcout')
+w_fc1 <- tf$Variable( tf$truncated_normal(shape((w*h)/(4^(aantal_pool)) * aantal_kanalen, 1024L), stddev=0.1), 'w_fc1')
+b_fc1 <- tf$Variable( tf$truncated_normal( shape(1024L) , stddev=0.1), 'b_fc1')
+
+
+w_fc2 <- tf$Variable( tf$truncated_normal( shape(1024L, 1024L), stddev=0.1), 'w_fc1')
+b_fc2 <- tf$Variable( tf$truncated_normal( shape(1024L) , stddev=0.1), 'b_fc1')
+
+
+w_fcout <- tf$Variable( tf$truncated_normal( shape(1024L, clas)  , stddev=0.1), 'w_fc1')
+b_fcout <- tf$Variable( tf$truncated_normal( shape(clas) , stddev=0.1), 'b_fc1')
+
 
 #Define network
 h_conv1 <- tf$nn$relu( tf$nn$conv2d(x, w_conv1 , strides=c(1L, 1L, 1L, 1L), padding='SAME') + b_conv1)
@@ -68,10 +78,14 @@ h_conv2 <- tf$nn$relu( tf$nn$conv2d(h_pool1, w_conv2, strides=c(1L, 1L, 1L, 1L),
 h_conv3 <- tf$nn$relu( tf$nn$conv2d(h_conv2, w_conv3, strides=c(1L, 1L, 1L, 1L), padding='SAME') + b_conv3)
 h_pool2 <- tf$nn$max_pool(h_conv3, ksize=c(1L, 2L, 2L, 1L),strides=c(1L, 2L, 2L, 1L), padding='SAME')
 h_conv4 <- tf$nn$relu( tf$nn$conv2d(h_pool2, w_conv4, strides=c(1L, 1L, 1L, 1L), padding='SAME') + b_conv4)
-h_conv4_flat <- tf$reshape( h_conv2 , shape(-1L, (w*h)/(4^(aantal_pool)) * aantal_kanalen))
-h_fc1 <- tf$nn$relu(tf$matmul(h_conv4_flat, w_fc1) + b_fc1)
-h_fcout <- tf$matmul(h_fc1, w_fcout) + b_fcout
+h_pool3 <- tf$nn$max_pool(h_conv4, ksize=c(1L, 2L, 2L, 1L),strides=c(1L, 2L, 2L, 1L), padding='SAME')
+h_conv5 <- tf$nn$relu( tf$nn$conv2d(h_pool2, w_conv5, strides=c(1L, 1L, 1L, 1L), padding='SAME') + b_conv5)
+h_conv5_flat <- tf$reshape( h_conv2 , shape(-1L, (w*h)/(4^(aantal_pool)) * aantal_kanalen))
+h_fc1 <- tf$nn$relu(tf$matmul(h_conv5_flat, w_fc1) + b_fc1)
+h_fc2 <- tf$matmul(h_fc1, w_fc2) + b_fc2
+h_fcout <- tf$matmul(h_fc2, w_fcout) + b_fcout
 h_output <- tf$nn$softmax(h_fcout)
+
 
 
 
@@ -103,13 +117,13 @@ for (i in 1:20000) {
   #train met gradient descent
   sess$run(train_step, feed_dict = dict(x = batch_files , labels = batch_labels , keep_prob = out, lrate = ds^i*lr))
   
-#z =  sess$run(h_fcout, feed_dict = dict(x = batch_files , labels = batch_labels , keep_prob = out, lrate = ds^i*lr))
+  #z =  sess$run(h_fcout, feed_dict = dict(x = batch_files , labels = batch_labels , keep_prob = out, lrate = ds^i*lr))
   
   
   
   #valideer om de 100 keer hoe het gaat op de testset
   if (i %% 1000 == 0) {
-   
+    
     data_class = select_files(data = train, num = 20)
     
     batch_labels = data_class[[2]]
@@ -139,4 +153,5 @@ for (i in 1:20000) {
   
   
 }
+
 
