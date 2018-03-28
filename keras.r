@@ -1,5 +1,26 @@
 #a linear stack of layers
-surce('packages.r')
+source('packages.r')
+
+
+######Parameters
+
+#read in file with labels and file names
+data = readRDS( file.path(path,'data.rds' )) 
+#data = data[data$label %in% c(1,2,8),]
+data$label = as.numeric(as.factor(data$label))
+
+#split in train and test
+split = sample(x =  c(1:nrow(data)), size = round(0.8*nrow(data)) )
+train = data[split,]
+test = data[-split,]
+
+
+clas = as.integer(length(unique(data$label)))#number of classes
+h = as.integer(64) #heigth image
+w = as.integer(64) #width image
+
+max_pred = 0.5
+#####
 
 model<-keras_model_sequential()
 
@@ -27,7 +48,7 @@ model %>%
   compile(loss="categorical_crossentropy", optimizer=opt, metrics = "accuracy")
 
 
-
+#model$load_weights('db/models/model1' , by_name=FALSE)
 
 
 
@@ -35,21 +56,28 @@ model %>%
 for (i in 1:20000) {
   
   #lees 50 random plaatjes in
-  data_class = select_files(data = train, num = 2)
-  batch_labels = onehot(data_class[[2]], clas = 3)
+  data_class = select_files(data = train, num = 10)
+  batch_labels = onehot(data_class[[2]], clas = clas)
   batch_files= data_class[[1]]
-  
+
   model$fit( x= batch_files, y= batch_labels, batch_size = dim(batch_files)[1], epochs = 1L  )
   
 
   
-  if(i %% 100){
-    data_class = select_files(data = test, num = 100)
-    batch_labels = onehot(data_class[[2]], clas = 3)
+  if(i %% 100 == 0){
+    data_class = select_files(data = test, num = 10)
+    batch_labels = onehot(data_class[[2]], clas = clas)
     batch_files= data_class[[1]]
     
     pred = model$evaluate( x= batch_files, y= batch_labels , steps = 1L )
-  print( paste('Accuracy', pred[[2]]))
+  print( paste('Accuracy is', pred[[2]]))
+  
+  if(pred[[2]]> max_pred){
+  #save model
+  model$save_weights( 'db/models/model1' )
+  max_pred = pred[[2]]
+    }
+  
    }
   
 }
