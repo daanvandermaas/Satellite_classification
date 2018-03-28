@@ -1,6 +1,5 @@
 source('packages.r')
-source('read_batch.r')
-source('select_files.r')
+
 
 
 #read in file with labels and file names
